@@ -1,1 +1,1 @@
-C++ compiler on C language
+C++ компилятор, написанный на языке C
