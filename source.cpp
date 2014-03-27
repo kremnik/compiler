@@ -1,0 +1,2 @@
+void main() 
+	x = 1;
