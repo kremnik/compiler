@@ -34,7 +34,7 @@ enum {
 	TYPE_CONST,
 	PLUSEQ, MINUSEQ, MULTEQ, DEREQ,
 	INCR, DECR,
-	AND,OR,
+	AND, OR,
 	LBRA, RBRA, 
 	LPAR, RPAR,
 	PLUS, MINUS, MULTIPLY, DERIVE, 
@@ -298,32 +298,17 @@ void nextLexeme() {
 
 enum {
 	_ID,
-	_PLUS,
-	_MINUS,
-	_MULTIPLY,
-	_DERIVE,
-	_AND,
-	_OR,
+	_PLUS, _MINUS, _MULTIPLY, _DERIVE,
+	_AND, _OR,
 	_EQUAL,
 	_IS,
-	_LESS,
-	_MORE,
-	_IF1,
-	_IF2,
-	_DO,
-	_WHILE,
-	_VOID,
-	_INT,
-	_REAL,
-	_STRUCT,
-	_POINTER,
-	_TYPE_VOID,
-	_TYPE_INT,
-	_TYPE_REAL,
-	_TYPE_STRUCT,
-	_TYPE_POINTER,
-	_NEW,
-	_DELETE,
+	_LESS, _MORE,
+	_IF1, _IF2,
+	_DO, _WHILE,
+	_VOID, _INT, _REAL, _STRUCT, _POINTER,
+	_TYPE_VOID, _TYPE_INT, _TYPE_REAL, _TYPE_STRUCT, _TYPE_POINTER, _TYPE_CONST,
+	_NEW, _DELETE,
+	_SEQ,
 	_EMPTY,
 	_MAIN,
 	_PROG
@@ -356,8 +341,10 @@ char *charNode(int kind) {
 		case _TYPE_REAL: return "_TYPE_REAL";
 		case _TYPE_STRUCT: return "_TYPE_STRUCT";
 		case _TYPE_POINTER: return "_TYPE_POINTER";
+		case _TYPE_CONST: return "_TYPE_CONST";
 		case _NEW: return "_NEW";
 		case _DELETE: return "_DELETE";
+		case _SEQ: return "_SEQ";
 		case _EMPTY: return "_EMPTY";
 		case _MAIN: return "_MAIN";
 		case _PROG: return "_PROG";
@@ -375,6 +362,7 @@ struct node {
 
 typedef struct node node;
 
+void printtreenode(node *root, int k);
 node *S();
 node *newNode(int k);
 node *programStart();
@@ -417,7 +405,7 @@ node *programStart() {
 }
 
 node *S() {
-	node *x, *t;
+	node *x, *t, *m;
 	/*
 	S->void main()
 	S->void main() Instruction
@@ -590,7 +578,7 @@ node *Postfix() {
 	x = First_Exp();
 	if (lex == INCR || lex == DECR) x = Postfix();
 	return x;
-	// May be error, problem function!
+	// Problem function, may be error!
 }
 
 node *First_Exp() {
@@ -667,6 +655,7 @@ node *If_Instr() {
 		x = newNode(_IF1);
 		nextLexeme();
 		if (lex == LPAR) {
+			nextLexeme();
 			x->op1 = Expression();
 			if (lex == RPAR) {
 				nextLexeme();
@@ -677,11 +666,11 @@ node *If_Instr() {
 					x->op3 = Instruction();	
 				}
 			}
-			else syntErrCode(1);
+			else syntErrCode(66);
 		}
-		else syntErrCode(1);
+		else syntErrCode(55);
 	}
-	else syntErrCode(1);
+	else syntErrCode(44);
 	return x;
 }
 
@@ -692,22 +681,19 @@ node *Do_Instr() {
 		nextLexeme();
 		if (lex == LBRA) {
 			x->op1 = Instruction();
-			if (lex == RBRA) {
+			if (lex == WHILE) {
 				nextLexeme();
-				if (lex == WHILE) {
+				if (lex == LPAR) {
 					nextLexeme();
-					if (lex == LPAR) {
-						x->op2 = Expression();
-						if (lex == RPAR) {
-							nextLexeme();
-						}
-						else syntErrCode(1);
+					x->op2 = Expression();
+					if (lex == RPAR) {
+						nextLexeme();
 					}
-					else syntErrCode(1);
+					else syntErrCode(14);
 				}
-				else syntErrCode(1);
+				else syntErrCode(123);
 			}
-			else syntErrCode(1);
+			else syntErrCode(123123);
 		}
 		else syntErrCode(1);
 	}
@@ -717,29 +703,26 @@ node *Do_Instr() {
 
 node *Comp_Instr() {
 	node *x;
-	if (lex == LBRA) {
-		nextLexeme();
-		if (lex == MULTIPLY || lex == MINUS || lex == PLUS || lex == INCR || lex == DECR || lex == NEW || lex == DELETE || lex == ID ||
-		lex == INT || lex == REAL ||
-		lex == LBRA ||
-		lex == IF ||
-		lex == DO ||
-		lex == TYPE_CONST || lex == TYPE_STRUCT || lex == TYPE_INT || lex == TYPE_REAL) {
-			printf("Foll_Ins next\n");
-			x = Foll_Ins();
-		}
-		else {
-			x = newNode(_EMPTY);
-		}
+	if (lex == MULTIPLY || lex == MINUS || lex == PLUS || lex == INCR || lex == DECR || lex == NEW || lex == DELETE || lex == ID ||
+	lex == INT || lex == REAL ||
+	lex == LBRA ||
+	lex == IF ||
+	lex == DO ||
+	lex == TYPE_CONST || lex == TYPE_STRUCT || lex == TYPE_INT || lex == TYPE_REAL) {
+		x = Instruction();
 	}
-	else syntErrCode(2);
+	else {
+		x = newNode(_EMPTY);
+		nextLexeme();
+	}
 	return x;
 }
 
-node *Foll_Ins() {
-	nextLexeme();
-	return NULL;
+
+node *Def_Instr() {
+	return NULL;	
 }
+
 
 node *Instruction() {
 	node *x, *t;
@@ -759,11 +742,15 @@ node *Instruction() {
 	{
 	*/
 	else if (lex == LBRA) {
-		x = Comp_Instr();
-		if (lex == RBRA) {
-			nextLexeme();
+		x = newNode(_EMPTY);
+		nextLexeme();
+		while(lex != RBRA) {
+			t = x;
+			x = newNode(_SEQ);
+			x->op1 = t;
+			x->op2 = Comp_Instr();
 		}
-		else syntErrCode(12);
+		nextLexeme();
 	}
 
 	/*
@@ -787,9 +774,9 @@ node *Instruction() {
 	SeqSpecif_Types Specif_Types Type Specif_Struct
 	const struct int real
 	*/
-	//else {
-	//	x = Def_Instr();
-	//}
+	else {
+		x = Def_Instr();
+	}
 	
 	return x;
 }
@@ -803,7 +790,7 @@ void printtreenode(node *r, int l)
   if(!r) return;
 
   printtreenode(r->op1, l+1);
-  for(i=0; i<l; ++i) printf(" ");
+  for(i=0; i<l; ++i) printf("  ");
   printf("%s\n", charNode(r->kind));
   printtreenode(r->op2, l+1);
 }
