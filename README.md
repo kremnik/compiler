@@ -4,11 +4,9 @@
 Компилирование:
 
 1) Linux:
-
 gcc -o compiler compiler.c
 
 2) Windows (MinGW или Cygwin):
-
 gcc -o compiler.exe compiler.c
 
 Для компиляции и запуска никаких дополнительных библиотек не требуется.
