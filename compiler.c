@@ -1,77 +1,48 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef enum { false, true } bool;
+#define MAJOR 0
+#define MINOR 4
 
-/*
-
-int
-real
-bool
-enum
-
-struct, *
-
-new
-delete
-+=
-*=
--=
-/=
-
-cin
-cout
-&&
-||
-
-++
---
-
-*/
+typedef enum { false, true } bool; // Не выпендриваюсь особо
 
 enum {
-	TYPE_INT,
-	TYPE_REAL,
-	TYPE_BOOL,
-	TYPE_ENUM,
-	TYPE_STRUCT,
-	TYPE_POINTER,
-	NEW,
-	DELETE,
-	CIN,
-	COUT,
-	DO,
-	WHILE,
-	IF,
-	ELSE,
+	NO,
+	LEX,
+	SYNT,
+	UNKNOWN
+};
+
+int ch = ' '; // current character
+int lex; // type of the lexeme
+int int_val; // value of integer
+char id_name[64]; // variable name (max length = 64 characters)
+int line = 1; // current line
+FILE *fp; // source file (c++ file for parsing)
+int type = NO; // NO, LEX, SYNT or UNKNOWN
+
+/* Lexical analyzer */
+
+enum {
+	TYPE_INT, TYPE_REAL, TYPE_BOOL, TYPE_ENUM, TYPE_STRUCT, TYPE_POINTER,
+	NEW, DELETE,
+	CIN, COUT,
+	DO, WHILE,
+	IF, ELSE,
 	TYPE_VOID,
-	MAIN,
-	RETURN,
+	MAIN, RETURN,
 	TYPE_CONST,
-	PLUSEQ,
-	MINUSEQ,
-	MULTEQ,
-	DEREQ,
-	INCR,
-	DECR,
-	AND,
-	OR,
-	LBRA, 
-	RBRA, 
-	LPAR, 
-	RPAR,
-	PLUS, 
-	MINUS,
-	MULTIPLY,
-	DERIVE, 
-	LESS,
-	MORE, 
+	PLUSEQ, MINUSEQ, MULTEQ, DEREQ,
+	INCR, DECR,
+	AND,OR,
+	LBRA, RBRA, 
+	LPAR, RPAR,
+	PLUS, MINUS, MULTIPLY, DERIVE, 
+	LESS, MORE, 
 	SEMI,
 	IS, 
 	EQUAL, 
-	INT,
-	REAL,
-	BOOL, 
+	INT, REAL, BOOL, 
 	ID,
 	EOI
 };
@@ -88,11 +59,6 @@ char *words[] = {
 	"const",
 	NULL
 };
-
-int ch = ' ';
-int lex;
-int int_val;
-char id_name[64];
 
 char *charLexeme(int lex) {
 	switch(lex) {
@@ -150,11 +116,9 @@ void syntErr() {
 }
 
 void syntErrCode(int code) {
-	fprintf(stderr, "syntax error: %d\n", code);
+	fprintf(stderr, "Syntax error: %d (Line: %d)\n", code, line);
 	exit(1);
 }
-
-FILE *fp;
 
 void nextChar() {
 	ch = getc(fp);
@@ -167,12 +131,17 @@ void nextLexeme() {
 			switch(ch) {
 				case '\n':
 					nextChar();
+					++line;
+					action = 1;
+					break;
 				case ' ':
 					nextChar();
 					action = 1;
+					break;
 				case EOF:
 					lex = EOI;
-					break;
+					if (type == LEX) return;
+					else break;
 				case '{':
 					nextChar(); 
 					lex = LBRA;
@@ -270,6 +239,7 @@ void nextLexeme() {
 							id_name[i++] = ch;
 							nextChar();
 						}
+						if (ch >= '0' && ch <= '9') syntErrCode(8);
 						id_name[i] = '\0';
 						lex = 0;
 						while (words[lex] != NULL && strcmp(words[lex], id_name) != 0) {
@@ -315,19 +285,16 @@ void nextLexeme() {
 			}
 		}
 		
-		
-		
-		if (lex == INT) printf("INT: %d\n", int_val);
-		else if (lex == BOOL) printf("BOOL: %s\n", id_name);
-		else if (lex == ID) printf("ID: %s\n", id_name);
-		else printf("%s\n", charLexeme(lex));
-		
-		
-
-		//nextLexeme();
-		
-		
+		if (type == LEX) {	
+			if (lex == INT) printf("INT: %d\n", int_val);
+			else if (lex == BOOL) printf("BOOL: %s\n", id_name);
+			else if (lex == ID) printf("ID: %s\n", id_name);
+			else printf("%s\n", charLexeme(lex));		
+			nextLexeme();
+		}
 }
+
+/* Syntax analyzer */
 
 enum {
 	_ID,
@@ -438,7 +405,6 @@ node *newNode(int k) {
 	x->op1 = NULL;
 	x->op2 = NULL;
 	x->op3 = NULL;
-	printf("Node created: %s\n", charNode(x->kind));
 	return x;
 }
 
@@ -828,6 +794,8 @@ node *Instruction() {
 	return x;
 }
 
+/* Help functions */
+
 void printtreenode(node *r, int l)
 {
   int i;
@@ -840,16 +808,44 @@ void printtreenode(node *r, int l)
   printtreenode(r->op2, l+1);
 }
 
+void printHelp() {
+	printf("C++ compiler\n");
+	printf("version %d.%d\n", MAJOR, MINOR);
+	printf("default source file: source.cpp\n");
+	printf("\n");
+	printf("For lexical analysis type:\n");
+	printf("	./compiler l\n");
+	printf("\n");
+	printf("For syntax analysis type:\n");
+	printf("	./compiler s\n");
+	printf("\n");
+}
 
 int main(int argc, char *argv[]) {
 
 	fp = fopen("source.cpp", "r");
 
-	//nextLexeme();
-	node *x = programStart();
-	
-	printf("Node tree: \n");
-	printtreenode(x, 0);
+	if (argc == 1) {
+		type = NO;
+		printHelp();
+	}
+
+	else if (!strcmp(argv[1], "l")) {
+		type = LEX;
+		nextLexeme();
+	}
+
+	else if (!strcmp(argv[1], "s")) {
+		type = SYNT;
+		node *x = programStart();
+		printf("Syntax tree: \n");
+		printtreenode(x, 0);
+	}
+
+	else {
+		type = UNKNOWN;
+		printf("Unknown parameter.\n");
+	}
 
 	return 0;
 }
