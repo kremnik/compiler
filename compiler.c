@@ -134,7 +134,7 @@ void nextLexeme() {
 					++line;
 					action = 1;
 					break;
-				case ' ':
+				case ' ': case 9: // 9 is tab 
 					nextChar();
 					action = 1;
 					break;
@@ -280,7 +280,7 @@ void nextLexeme() {
 						}
 					}
 					else {
-						syntErrCode(1);
+						printf("ch == %c", ch);
 					}
 			}
 		}
@@ -429,20 +429,20 @@ node *S() {
 						return x;
 					}
 				}
-				else syntErrCode(1);
+				else syntErrCode(11);
 			}
-			else syntErrCode(1);
+			else syntErrCode(12);
 		}
-		else syntErrCode(1);
+		else syntErrCode(13);
 	}
-	else syntErrCode(1);
+	else syntErrCode(14);
 }
 
 node *InstExp() {
 	node *x;
 	x = Expression();
 	if (lex == SEMI) nextLexeme();
-	else syntErrCode(1);
+	else syntErrCode(12);
 	return x;
 }
 
@@ -559,7 +559,9 @@ node *Unar() {
 		t = newNode(lex == INCR ? _PLUS : _MINUS);
 		nextLexeme();
 		t->op1 = x->op1;
+		// Where is t connect?
 		t->op2 = newNode(_INT);
+		
 	}
 	else if (lex == LPAR || lex == ID || lex == INT || lex == REAL) {
 		x = Postfix();
@@ -589,7 +591,7 @@ node *First_Exp() {
 		if (lex == RPAR) {
 			nextLexeme();
 		}
-		else syntErrCode(1);
+		else syntErrCode(12);
 	}
 	else if (lex == ID) {
 		x = newNode(_ID);
@@ -599,7 +601,7 @@ node *First_Exp() {
 		x = newNode(lex == INT ? _INT : _REAL);
 		nextLexeme();
 	}
-	else syntErrCode(1);
+	else syntErrCode(12);
 	return x;
 	// Arrays missing!
 }
@@ -695,9 +697,9 @@ node *Do_Instr() {
 			}
 			else syntErrCode(123123);
 		}
-		else syntErrCode(1);
+		else syntErrCode(11);
 	}
-	else syntErrCode(1);
+	else syntErrCode(22);
 	return x;
 }
 
