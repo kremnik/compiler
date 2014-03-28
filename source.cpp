@@ -13,6 +13,7 @@ void main() {
 				y = x;
 			}
 			while (x == 1);
+			x = 1;
 		}
 	}
 }
