@@ -4,14 +4,51 @@
 #define MAJOR 0
 #define MINOR 4
 
+/*
+
+Current bugs:
+- Unar processing
+- Error codes (wrong missed symbol showing)
+- RBRA '}' infinite loop
+
+Current todo's:
+- Add comments to the grammar functions
+- Add more error codes
+- Add def grammar functions
+- Add arrays computing
+- Add short if-else statement computing
+
+*/
+
 typedef enum { false, true } bool; // Не выпендриваюсь особо
 
+// enum for argv
 enum {
 	NO,
 	LEX,
 	SYNT,
 	UNKNOWN
 };
+
+// syntax error codes
+enum {
+	LPAR_MISS,
+	RPAR_MISS,
+	LBRA_MISS,
+	RBRA_MISS,
+	SEMI_MISS
+};
+
+char *charErr(int code) {
+	switch(code) {
+		case LPAR_MISS: return "'(' required";
+		case RPAR_MISS: return "')' required";
+		case LBRA_MISS: return "'{' required";
+		case RBRA_MISS: return "'}' required";
+		case SEMI_MISS: return "';' required";
+		default: return "(unknown error code)";
+	}
+}
 
 int ch = ' '; // current character
 int lex; // type of the lexeme
@@ -116,7 +153,7 @@ void syntErr() {
 }
 
 void syntErrCode(int code) {
-	fprintf(stderr, "Syntax error: %d (Line: %d)\n", code, line);
+	fprintf(stderr, "Syntax error: %s (Line: %d)\n", charErr(code), line);
 	exit(1);
 }
 
@@ -362,7 +399,7 @@ struct node {
 
 typedef struct node node;
 
-void printtreenode(node *root, int k);
+void printTree(node *root, int k);
 node *S();
 node *newNode(int k);
 node *programStart();
@@ -429,9 +466,9 @@ node *S() {
 						return x;
 					}
 				}
-				else syntErrCode(11);
+				else syntErrCode(RPAR_MISS);
 			}
-			else syntErrCode(12);
+			else syntErrCode(LPAR_MISS);
 		}
 		else syntErrCode(13);
 	}
@@ -442,7 +479,7 @@ node *InstExp() {
 	node *x;
 	x = Expression();
 	if (lex == SEMI) nextLexeme();
-	else syntErrCode(12);
+	else syntErrCode(SEMI_MISS);
 	return x;
 }
 
@@ -556,10 +593,11 @@ node *Unar() {
 	if (lex == INCR || lex == DECR) {
 		x = newNode(_IS);
 		x->op1 = Unar();
+		exit(0);
 		t = newNode(lex == INCR ? _PLUS : _MINUS);
 		nextLexeme();
 		t->op1 = x->op1;
-		// Where is t connect?
+		// Where is t connects?
 		t->op2 = newNode(_INT);
 		
 	}
@@ -628,9 +666,9 @@ node *New() {
 			if (lex == RPAR) {
 				nextLexeme();
 			}
-			else syntErrCode(1);
+			else syntErrCode(RPAR_MISS);
 		}
-		else syntErrCode(1);
+		else syntErrCode(LPAR_MISS);
 	}
 	else syntErrCode(1);
 	return x;
@@ -668,9 +706,9 @@ node *If_Instr() {
 					x->op3 = Instruction();	
 				}
 			}
-			else syntErrCode(66);
+			else syntErrCode(RPAR_MISS);
 		}
-		else syntErrCode(55);
+		else syntErrCode(LPAR_MISS);
 	}
 	else syntErrCode(44);
 	return x;
@@ -691,13 +729,13 @@ node *Do_Instr() {
 					if (lex == RPAR) {
 						nextLexeme();
 					}
-					else syntErrCode(14);
+					else syntErrCode(RPAR_MISS);
 				}
-				else syntErrCode(123);
+				else syntErrCode(LPAR_MISS);
 			}
 			else syntErrCode(123123);
 		}
-		else syntErrCode(11);
+		else syntErrCode(LBRA_MISS);
 	}
 	else syntErrCode(22);
 	return x;
@@ -785,16 +823,25 @@ node *Instruction() {
 
 /* Help functions */
 
-void printtreenode(node *r, int l)
+void printTree(node *r, int l)
 {
-  int i;
+	int i;
 
-  if(!r) return;
+	if(!r) return;
 
-  printtreenode(r->op1, l+1);
-  for(i=0; i<l; ++i) printf("  ");
-  printf("%s\n", charNode(r->kind));
-  printtreenode(r->op2, l+1);
+	// op1
+
+	printTree(r->op1, l+1);
+
+	for(i=0; i<l; ++i) printf("  ");
+
+	printf("%s\n", charNode(r->kind));
+
+	// op2
+
+	printTree(r->op2, l+1);
+
+	printTree(r->op3, l+1);
 }
 
 void printHelp() {
@@ -828,7 +875,7 @@ int main(int argc, char *argv[]) {
 		type = SYNT;
 		node *x = programStart();
 		printf("Syntax tree: \n");
-		printtreenode(x, 0);
+		printTree(x, 0);
 	}
 
 	else {
