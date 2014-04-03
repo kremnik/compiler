@@ -9,7 +9,10 @@
 Current bugs:
 - Unar processing
 - Error codes (wrong missed symbol showing)
-- RBRA '}' infinite loop
+
+*/
+
+/*
 
 Current todo's:
 - Add comments to the grammar functions
@@ -36,7 +39,10 @@ enum {
 	RPAR_MISS,
 	LBRA_MISS,
 	RBRA_MISS,
-	SEMI_MISS
+	SEMI_MISS,
+	DO_MISS,
+	WHILE_MISS,
+	IF_MISS
 };
 
 char *charErr(int code) {
@@ -710,7 +716,7 @@ node *If_Instr() {
 		}
 		else syntErrCode(LPAR_MISS);
 	}
-	else syntErrCode(44);
+	else syntErrCode(IF_MISS);
 	return x;
 }
 
@@ -733,11 +739,11 @@ node *Do_Instr() {
 				}
 				else syntErrCode(LPAR_MISS);
 			}
-			else syntErrCode(123123);
+			else syntErrCode(WHILE_MISS);
 		}
 		else syntErrCode(LBRA_MISS);
 	}
-	else syntErrCode(22);
+	else syntErrCode(DO_MISS);
 	return x;
 }
 
