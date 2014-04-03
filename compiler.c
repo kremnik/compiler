@@ -785,6 +785,7 @@ node *Instruction() {
 		x = newNode(_EMPTY);
 		nextLexeme();
 		while(lex != RBRA) {
+			if (lex == EOI) syntErr();
 			t = x;
 			x = newNode(_SEQ);
 			x->op1 = t;
@@ -841,6 +842,8 @@ void printTree(node *r, int l)
 
 	printTree(r->op2, l+1);
 
+	// op3
+	
 	printTree(r->op3, l+1);
 }
 
