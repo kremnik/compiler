@@ -1,21 +1,19 @@
 void main() {
-	z = 1;
-	do { 
-		x = x + 1; 
-		y;
-	} 
-	while (x == 1);
 	if (x == 1) {
 		y = 1;
-		if (y == 1) {
-			x = 1;
-			do {
-				y = x;
-			}
-			while (x == 1);
-			x = 1;
-		}
 	}
+<<<<<<< HEAD
+=======
+	else {
+		if (z == 1) k = 1;
+		x = 1;
+	}
+	do {
+		x = x + 1;
+		y = x - y;
+	}
+	while (x == 1);
+>>>>>>> 323818964db10c02e495964db6dc4b7f392c4dfd
 }
 
 
