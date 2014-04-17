@@ -2,14 +2,14 @@
 #include <stdlib.h>
 
 #define MAJOR 0
-#define MINOR 4
+#define MINOR 5
 
 /*
 
 Current bugs:
 - Unar processing
 - Error codes (wrong missed symbol showing)
-
+- Lexcical analyzer ids computing
 */
 
 /*
@@ -20,7 +20,7 @@ Current todo's:
 - Add def grammar functions
 - Add arrays computing
 - Add short if-else statement computing
-
+- Add terminal symbols to syntax tree
 */
 
 typedef enum { false, true } bool; // Не выпендриваюсь особо
@@ -351,6 +351,7 @@ enum {
 	_VOID, _INT, _REAL, _STRUCT, _POINTER,
 	_TYPE_VOID, _TYPE_INT, _TYPE_REAL, _TYPE_STRUCT, _TYPE_POINTER, _TYPE_CONST,
 	_NEW, _DELETE,
+	_LBRA, _RBRA, _LPAR, _RPAR,
 	_SEQ,
 	_EMPTY,
 	_MAIN,
@@ -387,6 +388,10 @@ char *charNode(int kind) {
 		case _TYPE_CONST: return "_TYPE_CONST";
 		case _NEW: return "_NEW";
 		case _DELETE: return "_DELETE";
+		case _LBRA: return "{";
+		case _RBRA: return "}";
+		case _LPAR: return "(";
+		case _RPAR: return ")";
 		case _SEQ: return "_SEQ";
 		case _EMPTY: return "_EMPTY";
 		case _MAIN: return "_MAIN";
@@ -401,6 +406,14 @@ struct node {
 	struct node *op1;
 	struct node *op2;
 	struct node *op3;
+
+	struct node *lbra;
+	struct node *rbra;
+	struct node *lpar;
+	struct node *rpar;
+
+	struct node *term1;
+	struct node *term2;
 };
 
 typedef struct node node;
@@ -433,9 +446,18 @@ node *Foll_Ins();
 node *newNode(int k) {
 	node *x = (node*)malloc(sizeof(node));
 	x->kind = k;
+
 	x->op1 = NULL;
 	x->op2 = NULL;
 	x->op3 = NULL;
+
+	x->lbra = NULL;
+	x->rbra = NULL;
+	x->lpar = NULL;
+	x->rpar = NULL;
+
+	x->term1 = NULL;
+	x->term2 = NULL;
 	return x;
 }
 
@@ -726,14 +748,18 @@ node *Do_Instr() {
 		x = newNode(_DO);
 		nextLexeme();
 		if (lex == LBRA) {
+			x->lbra = newNode(_LBRA);
 			x->op1 = Instruction();
+			x->rbra = newNode(_RBRA);
 			if (lex == WHILE) {
 				nextLexeme();
 				if (lex == LPAR) {
 					nextLexeme();
+					x->lpar = newNode(_LPAR);
 					x->op2 = Expression();
 					if (lex == RPAR) {
 						nextLexeme();
+						x->rpar = newNode(_RPAR);
 					}
 					else syntErrCode(RPAR_MISS);
 				}
@@ -835,22 +861,32 @@ void printTree(node *r, int l)
 	int i;
 
 	if(!r) return;
+	if (r->kind == _EMPTY) return;
+
+	printTree(r->lbra, l+1);
 
 	// op1
 
 	printTree(r->op1, l+1);
 
-	for(i=0; i<l; ++i) printf("  ");
+	for(i=0; i<l; ++i) printf("   ");
 
 	printf("%s\n", charNode(r->kind));
 
+	printTree(r->rbra, l+1);
+
 	// op2
 
+	printTree(r->lpar, l+1);
+
 	printTree(r->op2, l+1);
+
+	printTree(r->rpar, l+1);	
 
 	// op3
 	
 	printTree(r->op3, l+1);
+
 }
 
 void printHelp() {
