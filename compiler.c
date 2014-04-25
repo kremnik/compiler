@@ -35,6 +35,8 @@ enum {
 
 // syntax error codes
 enum {
+	UNKN,
+	WRONG_VAR,
 	LPAR_MISS,
 	RPAR_MISS,
 	LBRA_MISS,
@@ -47,12 +49,14 @@ enum {
 
 char *charErr(int code) {
 	switch(code) {
+		case UNKN:   return "Unknown error";
+		case WRONG_VAR: return "Wrong variable name";
 		case LPAR_MISS: return "'(' required";
 		case RPAR_MISS: return "')' required";
 		case LBRA_MISS: return "'{' required";
 		case RBRA_MISS: return "'}' required";
 		case SEMI_MISS: return "';' required";
-		default: return "(unknown error code)";
+		default:        return "(unknown error code)";
 	}
 }
 
@@ -158,6 +162,11 @@ void syntErr() {
 	exit(1);
 }
 
+void lexErrCode(int code) {
+	fprintf(stderr, "Lexical error: %s (Line: %d)\n", charErr(code), line);
+	exit(1);
+}
+
 void syntErrCode(int code) {
 	fprintf(stderr, "Syntax error: %s (Line: %d)\n", charErr(code), line);
 	exit(1);
@@ -165,6 +174,35 @@ void syntErrCode(int code) {
 
 void nextChar() {
 	ch = getc(fp);
+}
+
+/*
+int delimeters[] = {
+	LPAR, RPAR, LBRA, RBRA, PLUS, MINUS, PLUSEQ, MINUSEQ, INCR, DECR, MULTIPLY, DERIVE, MULTEQ, DEREQ, EQUAL, SEMI
+};
+*/
+
+/*
+bool inArray(int* arr, int size, int num) {
+	int i = 0;
+	for (i = 0; i < size; ++i) {
+		if (arr[i] == num) return true;
+	}
+	return false;
+}
+*/
+
+char delimeters[] = { // 11 elements
+	"(){}+-*/=;\0"
+};
+
+bool inArray(char arr[], char chr) {
+	int i = 0;
+	while (arr[i] != '\0') {
+		if (arr[i] == chr) return true;
+		++i;
+	}
+	return false;
 }
 
 void nextLexeme() {
@@ -274,6 +312,7 @@ void nextLexeme() {
 							int_val = int_val*10 + (ch - '0');
 							nextChar();
 						}
+						if (!inArray(delimeters, ch)) lexErrCode(WRONG_VAR);
 						lex = INT;
 					}
 					else if (ch >= 'a' && ch <= 'z') {
@@ -407,10 +446,10 @@ struct node {
 	struct node *op2;
 	struct node *op3;
 
-	struct node *lbra;
-	struct node *rbra;
-	struct node *lpar;
-	struct node *rpar;
+	struct node *spec1;
+	struct node *spec2;
+	struct node *spec3;
+	struct node *spec4;
 
 	struct node *term1;
 	struct node *term2;
@@ -451,10 +490,10 @@ node *newNode(int k) {
 	x->op2 = NULL;
 	x->op3 = NULL;
 
-	x->lbra = NULL;
-	x->rbra = NULL;
-	x->lpar = NULL;
-	x->rpar = NULL;
+	x->spec1 = NULL;
+	x->spec2 = NULL;
+	x->spec3 = NULL;
+	x->spec4 = NULL;
 
 	x->term1 = NULL;
 	x->term2 = NULL;
@@ -792,6 +831,7 @@ node *Comp_Instr() {
 
 
 node *Def_Instr() {
+	node *x;
 	return NULL;	
 }
 
@@ -817,7 +857,7 @@ node *Instruction() {
 		x = newNode(_EMPTY);
 		nextLexeme();
 		while(lex != RBRA) {
-			if (lex == EOI) syntErr();
+			if (lex == EOI) syntErrCode(RBRA_MISS);
 			t = x;
 			x = newNode(_SEQ);
 			x->op1 = t;
