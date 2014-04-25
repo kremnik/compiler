@@ -450,6 +450,8 @@ struct node {
 	struct node *spec2;
 	struct node *spec3;
 	struct node *spec4;
+	struct node *spec5;
+	struct node *spec6;
 
 	struct node *term1;
 	struct node *term2;
@@ -494,6 +496,8 @@ node *newNode(int k) {
 	x->spec2 = NULL;
 	x->spec3 = NULL;
 	x->spec4 = NULL;
+	x->spec5 = NULL;
+	x->spec6 = NULL;
 
 	x->term1 = NULL;
 	x->term2 = NULL;
@@ -758,19 +762,26 @@ node *Delete() {
 
 node *If_Instr() {
 	node *x;
+	bool ispar = 0;
 	if (lex == IF) {
 		x = newNode(_IF1);
 		nextLexeme();
 		if (lex == LPAR) {
+			x->spec1 = newNode(_LPAR);
 			nextLexeme();
 			x->op1 = Expression();
 			if (lex == RPAR) {
 				nextLexeme();
+				x->spec2 = newNode(_RPAR);
+				if (lex == LBRA) { x->spec3 = newNode(_LBRA); ispar = 1; }
 				x->op2 = Instruction();
+				if (ispar) { x->spec4 = newNode(_RBRA); ispar = 0; }
 				if (lex == ELSE) {
 					x->kind = _IF2;
 					nextLexeme();
+					if (lex == LBRA) { x->spec5 = newNode(_LBRA); ispar = 1; }
 					x->op3 = Instruction();	
+					if (ispar) { x->spec6 = newNode(_RBRA); ispar = 0; }
 				}
 			}
 			else syntErrCode(RPAR_MISS);
@@ -787,18 +798,18 @@ node *Do_Instr() {
 		x = newNode(_DO);
 		nextLexeme();
 		if (lex == LBRA) {
-			x->lbra = newNode(_LBRA);
+			x->spec1 = newNode(_LBRA);
 			x->op1 = Instruction();
-			x->rbra = newNode(_RBRA);
+			x->spec2 = newNode(_RBRA);
 			if (lex == WHILE) {
 				nextLexeme();
 				if (lex == LPAR) {
+					x->spec3 = newNode(_LPAR);
 					nextLexeme();
-					x->lpar = newNode(_LPAR);
 					x->op2 = Expression();
 					if (lex == RPAR) {
 						nextLexeme();
-						x->rpar = newNode(_RPAR);
+						x->spec4 = newNode(_RPAR);
 					}
 					else syntErrCode(RPAR_MISS);
 				}
@@ -831,10 +842,32 @@ node *Comp_Instr() {
 
 
 node *Def_Instr() {
-	node *x;
-	return NULL;	
+	node *x = newNode(_SEQ);
+	x->op1 = SeqSpecif_Types();
+	x->op2 = List_InitDef();
+	return x;	
 }
 
+node SeqSpecif_Types() {
+	node *x;
+	x = Specif_Types();
+	return x;
+}
+
+node Specif_Types() {
+	node *x;
+	if (lex == TYPE_INT || lex == TYPE_REAL) {
+		x = Type();
+	}
+	else if (lex == TYPE_STRUCT) {
+		x = Specif_Struct();
+	}
+	else if (lex == TYPE_CONST) {
+		x = newNode(_TYPE_CONST);
+	}
+	else SyntErr();
+	return x;
+}
 
 node *Instruction() {
 	node *x, *t;
@@ -903,29 +936,28 @@ void printTree(node *r, int l)
 	if(!r) return;
 	if (r->kind == _EMPTY) return;
 
-	printTree(r->lbra, l+1);
-
 	// op1
 
+	printTree(r->spec1, l+1);
 	printTree(r->op1, l+1);
+	printTree(r->spec2, l+1);
 
 	for(i=0; i<l; ++i) printf("   ");
 
 	printf("%s\n", charNode(r->kind));
 
-	printTree(r->rbra, l+1);
-
 	// op2
 
-	printTree(r->lpar, l+1);
-
+	printTree(r->spec3, l+1);
 	printTree(r->op2, l+1);
+	printTree(r->spec4, l+1);
 
-	printTree(r->rpar, l+1);	
 
 	// op3
 	
+	printTree(r->spec5, l+1);
 	printTree(r->op3, l+1);
+	printTree(r->spec6, l+1);
 
 }
 
