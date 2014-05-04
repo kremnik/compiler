@@ -483,6 +483,11 @@ node *Type();
 node *New();
 node *Delete();
 node *Foll_Ins();
+node *SeqSpecif_Types();
+node *Specif_Types();
+node *List_InitDef();
+node *Specif_Struct();
+node *Specif_Struct_List();
 
 node *newNode(int k) {
 	node *x = (node*)malloc(sizeof(node));
@@ -534,6 +539,7 @@ node *S() {
 					}
 					else {
 						t->op1 = Instruction();
+						printf("Here7\n");
 						return x;
 					}
 				}
@@ -848,25 +854,92 @@ node *Def_Instr() {
 	return x;	
 }
 
-node SeqSpecif_Types() {
+node *SeqSpecif_Types() {
 	node *x;
 	x = Specif_Types();
 	return x;
 }
 
-node Specif_Types() {
+node *Specif_Types() {
 	node *x;
 	if (lex == TYPE_INT || lex == TYPE_REAL) {
 		x = Type();
 	}
 	else if (lex == TYPE_STRUCT) {
+		printf("Here2\n");
 		x = Specif_Struct();
 	}
 	else if (lex == TYPE_CONST) {
 		x = newNode(_TYPE_CONST);
 	}
-	else SyntErr();
+	else {
+		printf("Error.\n");
+		exit(1);
+	}
 	return x;
+}
+
+node *Specif_Struct() {
+	node *x = newNode(_TYPE_STRUCT);
+	nextLexeme();
+	if (lex == LBRA) {
+		x->spec1 = newNode(_LBRA);
+		nextLexeme();
+		if (lex == RBRA) {
+			x->spec2 = newNode(_RBRA);
+		}
+		else {
+			x->op1 = Specif_Struct_List();
+			if (lex == RBRA) {
+				x->spec2 = newNode(_RBRA);
+			}
+			else {
+				printf("Error.\n");
+				exit(1);
+			}
+		}
+	}
+	else if (lex == ID) {
+		printf("Here3\n");
+		nextLexeme();
+		x->op1 = newNode(_ID);
+		if (lex == LBRA) {
+			x->spec3 = newNode(_LBRA);
+			nextLexeme();
+			if (lex == RBRA) {
+				x->spec2 = newNode(_RBRA);
+				printf("Here4\n");
+			}
+			else {
+				x->op2 = Specif_Struct_List();
+				if (lex == RBRA) {
+					x->spec4 = newNode(_RBRA);
+				}
+				else {
+					printf("Error.\n");
+					exit(1);
+				}
+			}
+		}
+		else {
+			printf("Error.\n");
+			exit(1);
+		}
+	}
+	else {
+		printf("Error.\n");
+		exit(1);
+	}
+	nextLexeme();
+	return x;
+}
+
+node *Specif_Struct_List() {
+	return NULL;
+}
+
+node *List_InitDef() {
+	return NULL;
 }
 
 node *Instruction() {
@@ -921,8 +994,12 @@ node *Instruction() {
 	const struct int real
 	*/
 	else {
+		printf("Here\n");
 		x = Def_Instr();
+		printf("Here5\n");
 	}
+	
+	printf("Here6\n");
 	
 	return x;
 }
