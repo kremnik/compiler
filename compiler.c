@@ -10,11 +10,13 @@ Current bugs:
 - Unar processing
 - Error codes (wrong missed symbol showing)
 - Lexcical analyzer ids computing
+- Comma delimeter in structures
 */
 
 /*
 
 Current todo's:
+- Add pointers
 - Add comments to the grammar functions
 - Add more error codes
 - Add def grammar functions
@@ -91,6 +93,7 @@ enum {
 	EQUAL, 
 	INT, REAL, BOOL, 
 	ID,
+	COMMA,
 	EOI
 };
 
@@ -104,6 +107,7 @@ char *words[] = {
 	"void", "main",
 	"return",
 	"const",
+	"comma",
 	NULL
 };
 
@@ -152,6 +156,7 @@ char *charLexeme(int lex) {
 		case REAL: return "REAL";
 		case BOOL: return "BOOL";
 		case ID: return "ID";
+		case COMMA: return "COMMA";
 		case EOI: return "EOI";
 		default: return "Undefined lexeme\n";
 	}
@@ -193,7 +198,7 @@ bool inArray(int* arr, int size, int num) {
 */
 
 char delimeters[] = { // 11 elements
-	"(){}+-*/=;\0"
+	"(){}+-*/=;,\0"
 };
 
 bool inArray(char arr[], char chr) {
@@ -269,6 +274,17 @@ void nextLexeme() {
 					break;
 				case '*':
 					nextChar();
+					// BUG: only character variable names
+					/*
+					if (ch >= 'a' && ch <= 'z') {
+						while (ch >= 'a' && ch <= 'z') {
+							nextChar();
+						}
+						if (inArray(delimeters, ch)) {
+							lex = TYPE_POINTER;
+						}
+					}
+					*/
 					if (ch != '=') lex = MULTIPLY;
 					else {
 						lex = MULTEQ;
@@ -304,6 +320,10 @@ void nextLexeme() {
 					else {
 						lex = IS;					
 					}
+					break;
+				case ',':
+					nextChar();
+					lex = COMMA;
 					break;
 				default:
 					if (ch >= '0' && ch <= '9') {
@@ -488,6 +508,9 @@ node *Specif_Types();
 node *List_InitDef();
 node *Specif_Struct();
 node *Specif_Struct_List();
+node *Elem_Struct_List();
+node *List_InitDef();
+node *InitDef();
 
 node *newNode(int k) {
 	node *x = (node*)malloc(sizeof(node));
@@ -851,6 +874,7 @@ node *Def_Instr() {
 	node *x = newNode(_SEQ);
 	x->op1 = SeqSpecif_Types();
 	x->op2 = List_InitDef();
+	nextLexeme();
 	return x;	
 }
 
@@ -912,17 +936,18 @@ node *Specif_Struct() {
 			}
 			else {
 				x->op2 = Specif_Struct_List();
+				printf("%s\n", charLexeme(lex)); // <-- charLexeme();
 				if (lex == RBRA) {
 					x->spec4 = newNode(_RBRA);
 				}
 				else {
-					printf("Error.\n");
+					printf("Error RBRA.\n");
 					exit(1);
 				}
 			}
 		}
 		else {
-			printf("Error.\n");
+			printf("Error LBRA.\n");
 			exit(1);
 		}
 	}
@@ -935,10 +960,76 @@ node *Specif_Struct() {
 }
 
 node *Specif_Struct_List() {
+	node *x, *t;
+	x = Elem_Struct_List();
+	printf("[%c]\n", ch);
+	if (lex == COMMA) {
+		t = x;
+		x = newNode(_SEQ);
+		nextLexeme();
+		x->op1 = Specif_Struct_List();
+		x->op2 = t;
+	}
+	return x;
+}
+
+node *Elem_Struct_List() {
+	node *x;
+	x = Def_Instr();
+	return x;
+}
+
+/*
+node *Elem_Struct_List() {
+	node *x;
+	if (lex == ID) {
+		nextLexeme();
+		if (lex == IS) {
+			x = newNode(_IS);
+			nextLexeme();
+			x->op1 = newNode(_ID);
+			x->op2 = Expression();
+		}
+		else {
+			printf("Error1.\n");
+			exit(1);
+		}
+	}
+	else {
+		printf("Error2.\n");
+		exit(1);
+	}
+	nextLexeme();
+	return x;
+}
+*/
+
+/*
+node *Log_OR() {
+	node *x, *t;
+	x = Log_AND();
+	if (lex == OR) {
+		t = x;
+		x = newNode(_OR);
+		nextLexeme();
+		x->op1 = Log_OR();
+		x->op2 = t;
+	}
+	return x;
+}
+*/
+
+node *List_InitDef() {
+	node *x, *t;
+	x = InitDef();
+	if (lex == ID) {
+		t = x;
+		x = newNode(_SEQ);
+	}
 	return NULL;
 }
 
-node *List_InitDef() {
+node *InitDef() {
 	return NULL;
 }
 
