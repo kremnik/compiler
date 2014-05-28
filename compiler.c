@@ -22,7 +22,7 @@ Current todo's:
 - Add def grammar functions
 - Add arrays computing
 - Add short if-else statement computing
-- Add terminal symbols to syntax tree
++ Add terminal symbols to syntax tree
 */
 
 typedef enum { false, true } bool; // Не выпендриваюсь особо
