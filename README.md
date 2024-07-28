@@ -1,14 +1,12 @@
-##C++ компилятор##
-Версия 0.4
+## A C++ compiler written in C
 
-###Компилирование:###
+### Compiling:
 1) Linux:
 gcc -o compiler compiler.c
 
 2) Windows (MinGW или Cygwin):
 gcc -o compiler.exe compiler.c
 
-Для компиляции и запуска никаких дополнительных библиотек не требуется.
+No additional libraries are required for compilation and execution.
 
-###Про работу компилятора:###
-На данный момент задание своего файла для компиляци не поддерживается. Исходный файл, который надо скомпилировать, должен называться source.cpp
+Currently, setting your own file for compilation is not supported. The source file that needs to be compiled must be named source.cpp.
